@@ -4,8 +4,11 @@
 
 add_executable(MemberProxyTests
 	add.cpp
-	subscript.cpp
+	clear.cpp
+	remove.cpp
 	set.cpp
+	size.cpp
+	subscript.cpp
 )
 
 target_link_libraries(MemberProxyTests catch)

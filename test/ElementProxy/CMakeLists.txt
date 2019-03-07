@@ -4,7 +4,10 @@
 
 add_executable(ElementProxyTests
 	add.cpp
+	clear.cpp
+	remove.cpp
 	set.cpp
+	size.cpp
 )
 
 target_link_libraries(ElementProxyTests catch)

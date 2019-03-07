@@ -9,8 +9,6 @@
 
 #include "../Memory/MemoryPool.hpp"
 #include "../Misc/Visitable.hpp"
-#include "../Numbers/parseFloat.hpp"
-#include "../Numbers/parseInteger.hpp"
 #include "../Operators/VariantOperators.hpp"
 #include "../Polyfills/type_traits.hpp"
 #include "VariantAs.hpp"
@@ -45,7 +43,7 @@ class VariantRefBase {
   template <typename T>
   FORCE_INLINE typename enable_if<is_integral<T>::value, bool>::type is()
       const {
-    return variantIsInteger(_data);
+    return variantIsInteger<T>(_data);
   }
   //
   // bool is<double>() const;
@@ -135,6 +133,10 @@ class VariantRef : public VariantRefBase<VariantData>,
 
   // Creates an uninitialized VariantRef
   FORCE_INLINE VariantRef() : base_type(0), _pool(0) {}
+
+  FORCE_INLINE void clear() const {
+    return variantSetNull(_data);
+  }
 
   // set(bool value)
   FORCE_INLINE bool set(bool value) const {
@@ -306,9 +308,28 @@ class VariantRef : public VariantRefBase<VariantData>,
   template <typename TString>
   FORCE_INLINE VariantRef getOrAddMember(const TString &) const;
 
+  FORCE_INLINE void remove(size_t index) const {
+    if (_data) _data->remove(index);
+  }
+  // remove(char*) const
+  // remove(const char*) const
+  // remove(const __FlashStringHelper*) const
+  template <typename TChar>
+  FORCE_INLINE typename enable_if<IsString<TChar *>::value>::type remove(
+      TChar *key) const {
+    if (_data) _data->remove(adaptString(key));
+  }
+  // remove(const std::string&) const
+  // remove(const String&) const
+  template <typename TString>
+  FORCE_INLINE typename enable_if<IsString<TString>::value>::type remove(
+      const TString &key) const {
+    if (_data) _data->remove(adaptString(key));
+  }
+
  private:
   MemoryPool *_pool;
-};
+};  // namespace ARDUINOJSON_NAMESPACE
 
 class VariantConstRef : public VariantRefBase<const VariantData>,
                         public VariantOperators<VariantConstRef>,

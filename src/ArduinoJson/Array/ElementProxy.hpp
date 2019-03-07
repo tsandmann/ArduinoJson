@@ -47,6 +47,10 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
     return *this;
   }
 
+  FORCE_INLINE void clear() const {
+    getUpstreamElement().clear();
+  }
+
   FORCE_INLINE bool isNull() const {
     return getUpstreamElement().isNull();
   }
@@ -118,6 +122,25 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
 
   VariantRef getElement(size_t index) const {
     return getUpstreamElement().getElement(index);
+  }
+
+  FORCE_INLINE void remove(size_t index) const {
+    getUpstreamElement().remove(index);
+  }
+  // remove(char*) const
+  // remove(const char*) const
+  // remove(const __FlashStringHelper*) const
+  template <typename TChar>
+  FORCE_INLINE typename enable_if<IsString<TChar*>::value>::type remove(
+      TChar* key) const {
+    getUpstreamElement().remove(key);
+  }
+  // remove(const std::string&) const
+  // remove(const String&) const
+  template <typename TString>
+  FORCE_INLINE typename enable_if<IsString<TString>::value>::type remove(
+      const TString& key) const {
+    getUpstreamElement().remove(key);
   }
 
  private:

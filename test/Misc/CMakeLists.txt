@@ -3,6 +3,7 @@
 # MIT License
 
 add_executable(MiscTests
+	conflicts.cpp
 	FloatParts.cpp
 	StringWriter.cpp
 	TypeTraits.cpp

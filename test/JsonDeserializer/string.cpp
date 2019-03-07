@@ -6,8 +6,6 @@
 #include <ArduinoJson.h>
 #include <catch.hpp>
 
-using namespace Catch::Matchers;
-
 TEST_CASE("Valid JSON strings value") {
   struct TestCase {
     const char* input;
@@ -63,4 +61,12 @@ TEST_CASE("Invalid JSON string") {
     CAPTURE(input);
     REQUIRE(deserializeJson(doc, input) == DeserializationError::InvalidInput);
   }
+}
+
+TEST_CASE("Not enough room to duplicate the string") {
+  DynamicJsonDocument doc(4);
+
+  REQUIRE(deserializeJson(doc, "\"hello world!\"") ==
+          DeserializationError::NoMemory);
+  REQUIRE(doc.isNull() == true);
 }

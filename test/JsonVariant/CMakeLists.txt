@@ -5,6 +5,7 @@
 add_executable(JsonVariantTests
 	add.cpp
 	as.cpp
+	clear.cpp
 	compare.cpp
 	copy.cpp
 	createNested.cpp
@@ -14,6 +15,8 @@ add_executable(JsonVariantTests
 	misc.cpp
 	nesting.cpp
 	or.cpp
+	overflow.cpp
+	remove.cpp
 	set.cpp
 	subscript.cpp
 	types.cpp

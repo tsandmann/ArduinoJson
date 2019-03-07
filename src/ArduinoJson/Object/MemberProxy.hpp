@@ -49,6 +49,10 @@ class MemberProxy : public VariantOperators<MemberProxy<TObject, TStringRef> >,
     return *this;
   }
 
+  FORCE_INLINE void clear() const {
+    getUpstreamMember().clear();
+  }
+
   FORCE_INLINE bool isNull() const {
     return getUpstreamMember().isNull();
   }
@@ -61,6 +65,29 @@ class MemberProxy : public VariantOperators<MemberProxy<TObject, TStringRef> >,
   template <typename TValue>
   FORCE_INLINE bool is() const {
     return getUpstreamMember().template is<TValue>();
+  }
+
+  FORCE_INLINE size_t size() const {
+    return getUpstreamMember().size();
+  }
+
+  FORCE_INLINE void remove(size_t index) const {
+    getUpstreamMember().remove(index);
+  }
+  // remove(char*) const
+  // remove(const char*) const
+  // remove(const __FlashStringHelper*) const
+  template <typename TChar>
+  FORCE_INLINE typename enable_if<IsString<TChar *>::value>::type remove(
+      TChar *key) const {
+    getUpstreamMember().remove(key);
+  }
+  // remove(const std::string&) const
+  // remove(const String&) const
+  template <typename TString>
+  FORCE_INLINE typename enable_if<IsString<TString>::value>::type remove(
+      const TString &key) const {
+    getUpstreamMember().remove(key);
   }
 
   template <typename TValue>

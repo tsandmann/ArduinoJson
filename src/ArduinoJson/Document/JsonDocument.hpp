@@ -57,6 +57,10 @@ class JsonDocument : public Visitable {
     return _pool.capacity();
   }
 
+  size_t size() const {
+    return _data.size();
+  }
+
   bool set(const JsonDocument& src) {
     return to<VariantRef>().set(src.as<VariantRef>());
   }
@@ -217,6 +221,25 @@ class JsonDocument : public Visitable {
   template <typename TChar>
   FORCE_INLINE bool add(TChar* value) {
     return addElement().set(value);
+  }
+
+  FORCE_INLINE void remove(size_t index) {
+    _data.remove(index);
+  }
+  // remove(char*)
+  // remove(const char*)
+  // remove(const __FlashStringHelper*)
+  template <typename TChar>
+  FORCE_INLINE typename enable_if<IsString<TChar*>::value>::type remove(
+      TChar* key) {
+    _data.remove(adaptString(key));
+  }
+  // remove(const std::string&)
+  // remove(const String&)
+  template <typename TString>
+  FORCE_INLINE typename enable_if<IsString<TString>::value>::type remove(
+      const TString& key) {
+    _data.remove(adaptString(key));
   }
 
  protected:

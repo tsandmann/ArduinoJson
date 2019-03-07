@@ -6,8 +6,7 @@
 
 #include "../Deserialization/deserialize.hpp"
 #include "../Memory/MemoryPool.hpp"
-#include "../Numbers/isFloat.hpp"
-#include "../Numbers/isInteger.hpp"
+#include "../Numbers/parseNumber.hpp"
 #include "../Polyfills/type_traits.hpp"
 #include "../Variant/VariantData.hpp"
 #include "EscapeSequence.hpp"
@@ -19,7 +18,6 @@ template <typename TReader, typename TStringStorage>
 class JsonDeserializer {
   typedef typename remove_reference<TStringStorage>::type::StringBuilder
       StringBuilder;
-  typedef const char *StringType;
 
  public:
   JsonDeserializer(MemoryPool &pool, TReader reader,
@@ -124,10 +122,10 @@ class JsonDeserializer {
       if (!slot) return DeserializationError::NoMemory;
 
       // Parse key
-      StringType key;
+      const char *key;
       err = parseKey(key);
       if (err) return err;
-      slot->setOwnedKey(key);
+      slot->setOwnedKey(make_not_null(key));
 
       // Skip spaces
       err = skipSpacesAndComments();
@@ -162,7 +160,7 @@ class JsonDeserializer {
     }
   }
 
-  DeserializationError parseKey(StringType &key) {
+  DeserializationError parseKey(const char *&key) {
     if (isQuote(current())) {
       return parseQuotedString(key);
     } else {
@@ -171,14 +169,14 @@ class JsonDeserializer {
   }
 
   DeserializationError parseStringValue(VariantData &variant) {
-    StringType value;
+    const char *value;
     DeserializationError err = parseQuotedString(value);
     if (err) return err;
-    variant.setOwnedString(value);
+    variant.setOwnedString(make_not_null(value));
     return DeserializationError::Ok;
   }
 
-  DeserializationError parseQuotedString(StringType &result) {
+  DeserializationError parseQuotedString(const char *&result) {
     StringBuilder builder = _stringStorage.startString();
     const char stopChar = current();
 
@@ -219,7 +217,7 @@ class JsonDeserializer {
     return DeserializationError::Ok;
   }
 
-  DeserializationError parseNonQuotedString(StringType &result) {
+  DeserializationError parseNonQuotedString(const char *&result) {
     StringBuilder builder = _stringStorage.startString();
 
     char c = current();
@@ -252,20 +250,40 @@ class JsonDeserializer {
     }
     buffer[n] = 0;
 
-    if (isInteger(buffer)) {
-      result.setInteger(parseInteger<Integer>(buffer));
-    } else if (isFloat(buffer)) {
-      result.setFloat(parseFloat<Float>(buffer));
-    } else if (!strcmp(buffer, "true")) {
+    c = buffer[0];
+    if (c == 't') {  // true
       result.setBoolean(true);
-    } else if (!strcmp(buffer, "false")) {
-      result.setBoolean(false);
-    } else if (!strcmp(buffer, "null")) {
-      // already null
-    } else {
-      return DeserializationError::InvalidInput;
+      return n == 4 ? DeserializationError::Ok
+                    : DeserializationError::IncompleteInput;
     }
-    return DeserializationError::Ok;
+    if (c == 'f') {  // false
+      result.setBoolean(false);
+      return n == 5 ? DeserializationError::Ok
+                    : DeserializationError::IncompleteInput;
+    }
+    if (c == 'n') {  // null
+      // the variant is already null
+      return n == 4 ? DeserializationError::Ok
+                    : DeserializationError::IncompleteInput;
+    }
+
+    ParsedNumber<Float, UInt> num = parseNumber<Float, UInt>(buffer);
+
+    switch (num.type()) {
+      case VALUE_IS_NEGATIVE_INTEGER:
+        result.setNegativeInteger(num.uintValue);
+        return DeserializationError::Ok;
+
+      case VALUE_IS_POSITIVE_INTEGER:
+        result.setPositiveInteger(num.uintValue);
+        return DeserializationError::Ok;
+
+      case VALUE_IS_FLOAT:
+        result.setFloat(num.floatValue);
+        return DeserializationError::Ok;
+    }
+
+    return DeserializationError::InvalidInput;
   }
 
   DeserializationError parseCodepoint(uint16_t &codepoint) {
@@ -296,7 +314,7 @@ class JsonDeserializer {
 
   static inline uint8_t decodeHex(char c) {
     if (c < 'A') return uint8_t(c - '0');
-    c &= ~0x20;  // uppercase
+    c = char(c & ~0x20);  // uppercase
     return uint8_t(c - 'A' + 10);
   }
 
